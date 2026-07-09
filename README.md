@@ -75,7 +75,16 @@ Use a Google Cloud service account. Do not put credentials in GitHub.
 1. Create a Google Cloud service account.
 2. Create a JSON key for that service account.
 3. Share the `Whatsapp Chat History` Google Sheet with the service account email as a viewer.
-4. Set:
+4. Set the local environment values.
+
+Simplest local option:
+
+```bash
+DEMO_MODE=false
+GOOGLE_SERVICE_ACCOUNT_FILE=/absolute/path/to/service-account.json
+```
+
+Or use direct environment fields:
 
 ```bash
 DEMO_MODE=false

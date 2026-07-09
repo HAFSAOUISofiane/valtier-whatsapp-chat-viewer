@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const fs = require('fs');
 const { CONFIG } = require('./config');
 
 let cachedAccessToken = null;
@@ -80,9 +81,18 @@ async function getGoogleAccessToken() {
 function getServiceAccount() {
   const json = process.env.GOOGLE_SERVICE_ACCOUNT_JSON || '';
   const jsonBase64 = process.env.GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 || '';
+  const jsonFile = process.env.GOOGLE_SERVICE_ACCOUNT_FILE || '';
 
   if (json || jsonBase64) {
     const parsed = JSON.parse(json || Buffer.from(jsonBase64, 'base64').toString('utf8'));
+    return {
+      client_email: parsed.client_email,
+      private_key: normalizePrivateKey(parsed.private_key),
+    };
+  }
+
+  if (jsonFile) {
+    const parsed = JSON.parse(fs.readFileSync(jsonFile, 'utf8'));
     return {
       client_email: parsed.client_email,
       private_key: normalizePrivateKey(parsed.private_key),
@@ -99,6 +109,56 @@ function getServiceAccount() {
   return {
     client_email: clientEmail,
     private_key: normalizePrivateKey(privateKey),
+  };
+}
+
+function getGoogleCredentialsStatus() {
+  if (CONFIG.demoMode) {
+    return {
+      configured: false,
+      source: 'demo',
+      message: 'Demo mode is active.',
+    };
+  }
+
+  if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
+    return {
+      configured: true,
+      source: 'GOOGLE_SERVICE_ACCOUNT_JSON',
+      message: 'Google service account JSON is configured.',
+    };
+  }
+
+  if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON_BASE64) {
+    return {
+      configured: true,
+      source: 'GOOGLE_SERVICE_ACCOUNT_JSON_BASE64',
+      message: 'Google service account JSON base64 is configured.',
+    };
+  }
+
+  if (process.env.GOOGLE_SERVICE_ACCOUNT_FILE) {
+    return {
+      configured: fs.existsSync(process.env.GOOGLE_SERVICE_ACCOUNT_FILE),
+      source: 'GOOGLE_SERVICE_ACCOUNT_FILE',
+      message: fs.existsSync(process.env.GOOGLE_SERVICE_ACCOUNT_FILE)
+        ? 'Google service account file is configured.'
+        : 'GOOGLE_SERVICE_ACCOUNT_FILE points to a file that does not exist.',
+    };
+  }
+
+  if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
+    return {
+      configured: true,
+      source: 'GOOGLE_SERVICE_ACCOUNT_EMAIL + GOOGLE_PRIVATE_KEY',
+      message: 'Google service account email and private key are configured.',
+    };
+  }
+
+  return {
+    configured: false,
+    source: '',
+    message: 'Missing Google service account credentials.',
   };
 }
 
@@ -144,5 +204,6 @@ function quoteSheetName(sheetName) {
 }
 
 module.exports = {
+  getGoogleCredentialsStatus,
   readSheetValues,
 };

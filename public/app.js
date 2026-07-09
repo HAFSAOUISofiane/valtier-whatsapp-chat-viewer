@@ -6,6 +6,7 @@ const state = {
   showInternal: false,
   demoMode: false,
   demoSamplePhone: '',
+  googleCredentials: null,
 };
 
 const elements = {
@@ -127,12 +128,21 @@ function handleLogout() {
 function renderSession(session) {
   state.demoMode = Boolean(session.demoMode);
   state.demoSamplePhone = session.demoSamplePhone || '';
+  state.googleCredentials = session.googleCredentials || null;
 
   const mode = session.demoMode ? 'demo mode' : 'live Google Sheet';
-  elements.sheetMeta.textContent = `Connected to ${session.sheetName || 'Hoja 1'} / ${mode}`;
+  const credentialStatus = state.googleCredentials && !session.demoMode
+    ? ` / ${state.googleCredentials.configured ? 'credentials ready' : 'credentials missing'}`
+    : '';
+  elements.sheetMeta.textContent = `Connected to ${session.sheetName || 'Hoja 1'} / ${mode}${credentialStatus}`;
 
   if (session.demoMode) {
     showAppError(`Local demo mode is active. Real client numbers will not match yet. Try demo number ${state.demoSamplePhone}.`);
+    return;
+  }
+
+  if (state.googleCredentials && !state.googleCredentials.configured) {
+    showAppError('Live Google Sheet mode is active, but Google credentials are missing. Add a service account JSON file or environment variables, then restart the app.');
   }
 }
 
