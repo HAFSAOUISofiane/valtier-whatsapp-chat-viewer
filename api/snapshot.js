@@ -18,7 +18,7 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    const body = await readJson(req);
+    const body = await readJson(req, { maxBytes: 25 * 1024 * 1024 });
     const csvText = String(body.csvText || '');
 
     if (!csvText.trim()) {

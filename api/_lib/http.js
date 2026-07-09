@@ -10,15 +10,16 @@ function sendError(res, statusCode, error) {
   sendJson(res, statusCode, { error: message });
 }
 
-function readJson(req) {
+function readJson(req, options = {}) {
   return new Promise((resolve, reject) => {
+    const maxBytes = options.maxBytes || 1024 * 1024;
     let body = '';
 
     req.on('data', (chunk) => {
       body += chunk;
 
-      if (body.length > 1024 * 1024) {
-        reject(new Error('Request body is too large.'));
+      if (Buffer.byteLength(body, 'utf8') > maxBytes) {
+        reject(new Error(`Request body is too large. Limit is ${Math.round(maxBytes / 1024 / 1024)} MB.`));
         req.destroy();
       }
     });
