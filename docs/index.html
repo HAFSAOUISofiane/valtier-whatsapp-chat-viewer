@@ -14,7 +14,7 @@
       <div class="brand-mark">V</div>
       <p class="eyebrow">Valtier operations</p>
       <h1>WhatsApp Chat Viewer</h1>
-      <p class="muted">GitHub Pages version. Private chat data stays local in your browser.</p>
+      <p class="muted">GitHub Pages version with direct Sheet loading when browser access is available.</p>
       <div class="field">
         <label for="accessCode">Access code</label>
         <input id="accessCode" name="accessCode" type="password" autocomplete="current-password" required>
@@ -29,7 +29,7 @@
       <div>
         <p class="eyebrow">Valtier operations</p>
         <h1>WhatsApp Chat Viewer</h1>
-        <p id="sheetMeta" class="topbar-meta">Browser-only mode / upload CSV to search</p>
+        <p id="sheetMeta" class="topbar-meta">Browser-only mode / loading Sheet access</p>
       </div>
       <button id="logoutButton" class="button ghost" type="button">Log out</button>
     </header>
@@ -50,9 +50,11 @@
 
     <section id="snapshotPanel" class="snapshot-panel">
       <div>
-        <h2>Upload CSV snapshot</h2>
-        <p>Export the Google Sheet tab as CSV, then upload it here. The file is processed inside this browser and is not sent to GitHub.</p>
+        <h2>Google Sheet connection</h2>
+        <p>The app tries to load the Sheet directly first. If Google blocks browser access, connect with Google or upload a CSV fallback.</p>
       </div>
+      <button id="reloadSheetButton" class="button primary" type="button">Load Google Sheet</button>
+      <button id="googleAuthButton" class="button hidden" type="button">Connect with Google</button>
       <label class="button" for="snapshotFile">Choose CSV</label>
       <input id="snapshotFile" type="file" accept=".csv,text/csv" class="file-input">
     </section>
@@ -60,7 +62,7 @@
     <section class="workspace">
       <aside id="profilePanel" class="profile-panel">
         <h2>No client selected</h2>
-        <p class="muted">Upload the chat history CSV first, then search by full international number, local number, or digits only.</p>
+        <p class="muted">Load the Google Sheet or upload the chat history CSV first, then search by full international number, local number, or digits only.</p>
         <p id="searchStatus" class="status-line"></p>
       </aside>
 
@@ -70,7 +72,7 @@
             <div id="chatAvatar" class="avatar">V</div>
             <div>
               <h2 id="chatTitle">Client conversation</h2>
-              <p id="chatSubtitle">Waiting for a CSV upload</p>
+              <p id="chatSubtitle">Waiting for Sheet access</p>
             </div>
           </div>
           <div id="chatCount" class="chat-count">0 messages</div>
@@ -78,8 +80,8 @@
         <div id="messageList" class="message-list">
           <div class="empty-state">
             <div class="empty-state-box">
-              <h2>Upload the CSV</h2>
-              <p class="muted">The conversation will appear here after the file is loaded and a phone number is searched.</p>
+              <h2>Load the Sheet</h2>
+              <p class="muted">The conversation will appear here after the Sheet is loaded and a phone number is searched.</p>
             </div>
           </div>
         </div>
@@ -87,6 +89,7 @@
     </section>
   </main>
 
+  <script src="./config.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>

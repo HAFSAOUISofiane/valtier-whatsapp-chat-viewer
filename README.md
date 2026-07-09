@@ -7,7 +7,7 @@ This replaces the Google Apps Script deployment with a normal web app that can l
 There are two usable versions:
 
 - Local or backend-hosted app: connects to a local CSV snapshot or private Google Sheets credentials.
-- Free GitHub Pages app: runs fully in the browser from `docs/`; agents upload the CSV snapshot locally before searching.
+- Free GitHub Pages app: runs fully in the browser from `docs/`; it can auto-load a public Sheet, use Google OAuth when configured, or accept a CSV snapshot fallback.
 
 ## What It Does
 
@@ -144,14 +144,33 @@ Alternative: set the full service account JSON in `GOOGLE_SERVICE_ACCOUNT_JSON` 
 
 The `docs/` folder contains a static GitHub Pages version. It is safe to publish because it does not include the WhatsApp chat CSV, `.env.local`, or Google credentials.
 
+Current access code:
+
+```text
+valtierrealestate2026
+```
+
 How agents use it:
 
 1. Open the GitHub Pages link.
 2. Enter the access code.
-3. Upload the exported `Whatsapp Chat History - Hoja 1.csv`.
-4. Search by full phone number, local phone number, or formatted number.
+3. The app tries to load the Google Sheet directly.
+4. If Google blocks browser access, connect with Google when OAuth is configured, or upload the exported `Whatsapp Chat History - Hoja 1.csv`.
+5. Search by full phone number, local phone number, or formatted number.
 
-Important: the GitHub Pages access code is only a light gate because static website code is public. It is useful for a free prototype, but not strong security. For a private live connection to Google Sheets, deploy the backend version on Vercel or another server host.
+GitHub Pages settings live in:
+
+```text
+docs/config.js
+```
+
+Important: the GitHub Pages access code is only a light gate because static website code is public. It is useful for a free prototype, but not strong security.
+
+Direct Google Sheet options on GitHub Pages:
+
+- Public browser read: the Sheet must be public/readable by link. This is not recommended for private WhatsApp history.
+- Google OAuth: set `googleOAuthClientId` in `docs/config.js`, enable the Google Sheets API, and add the GitHub Pages URL as an authorized JavaScript origin in Google Cloud.
+- Secure backend: deploy the backend version on Vercel or another Node host with service account credentials.
 
 From this folder:
 

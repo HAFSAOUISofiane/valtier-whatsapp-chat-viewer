@@ -1,4 +1,13 @@
-const STATIC_ACCESS_CODE = 'test';
+const CONFIG = Object.assign({
+  accessCode: 'valtierrealestate2026',
+  sheetId: '',
+  sheetRange: 'Hoja 1!A1:L',
+  publicCsvUrl: '',
+  googleOAuthClientId: '',
+}, window.VALTIER_CONFIG || {});
+const STATIC_ACCESS_CODE = CONFIG.accessCode;
+const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+const GOOGLE_IDENTITY_SCRIPT = 'https://accounts.google.com/gsi/client';
 const STORAGE_KEY = 'valtier_whatsapp_pages_session';
 const DB_NAME = 'valtier_whatsapp_viewer';
 const DB_STORE = 'snapshots';
@@ -9,6 +18,7 @@ const state = {
   values: [],
   result: null,
   showInternal: false,
+  googleTokenClient: null,
 };
 
 const elements = {
@@ -27,6 +37,8 @@ const elements = {
   showInternal: document.getElementById('showInternal'),
   snapshotPanel: document.getElementById('snapshotPanel'),
   snapshotFile: document.getElementById('snapshotFile'),
+  reloadSheetButton: document.getElementById('reloadSheetButton'),
+  googleAuthButton: document.getElementById('googleAuthButton'),
   profilePanel: document.getElementById('profilePanel'),
   chatAvatar: document.getElementById('chatAvatar'),
   chatTitle: document.getElementById('chatTitle'),
@@ -47,6 +59,8 @@ elements.loginForm.addEventListener('submit', handleLogin);
 elements.logoutButton.addEventListener('click', handleLogout);
 elements.searchForm.addEventListener('submit', handleSearch);
 elements.snapshotFile.addEventListener('change', handleSnapshotUpload);
+elements.reloadSheetButton.addEventListener('click', handleReloadSheet);
+elements.googleAuthButton.addEventListener('click', handleGoogleAuth);
 elements.showInternal.addEventListener('change', () => {
   state.showInternal = elements.showInternal.checked;
   renderMessages();
@@ -61,7 +75,7 @@ async function bootstrap() {
   }
 
   showViewer();
-  await loadCachedSnapshot();
+  await loadSheetOrCachedSnapshot();
 }
 
 async function handleLogin(event) {
@@ -78,7 +92,7 @@ async function handleLogin(event) {
   elements.accessCode.value = '';
   elements.loginError.textContent = '';
   showViewer();
-  await loadCachedSnapshot();
+  await loadSheetOrCachedSnapshot();
 }
 
 function handleLogout() {
@@ -113,6 +127,32 @@ async function handleSnapshotUpload(event) {
   }
 }
 
+async function handleReloadSheet() {
+  hideAppError();
+  await loadSheetOrCachedSnapshot({ forcePublicError: true });
+}
+
+async function handleGoogleAuth() {
+  hideAppError();
+
+  if (!CONFIG.googleOAuthClientId) {
+    showAppError('Google sign-in is not configured yet. Add a Google OAuth Client ID in docs/config.js, then redeploy.');
+    return;
+  }
+
+  try {
+    setSheetLoading(true, 'Opening Google connection...');
+    const accessToken = await requestGoogleAccessToken();
+    await loadSheetFromGoogleApi(accessToken);
+  } catch (error) {
+    const message = getErrorMessage(error);
+    setSearchStatus(message);
+    showAppError(message);
+  } finally {
+    setSheetLoading(false);
+  }
+}
+
 function handleSearch(event) {
   event.preventDefault();
   const phone = elements.phoneInput.value.trim();
@@ -120,8 +160,8 @@ function handleSearch(event) {
   hideAppError();
 
   if (!state.values.length) {
-    setSearchStatus('Upload the CSV snapshot first.');
-    showAppError('Upload the CSV snapshot first. The GitHub Pages version cannot read the private Google Sheet directly.');
+    setSearchStatus('Load the Google Sheet or upload the CSV snapshot first.');
+    showAppError('Load the Google Sheet or upload the CSV snapshot first. If the Sheet is private, configure Google sign-in or use the CSV fallback.');
     return;
   }
 
@@ -138,6 +178,73 @@ function handleSearch(event) {
     setSearchStatus(message);
     showAppError(message);
   }
+}
+
+async function loadSheetOrCachedSnapshot(options = {}) {
+  renderAuthState();
+
+  if (CONFIG.publicCsvUrl) {
+    try {
+      setSheetLoading(true, 'Loading Google Sheet...');
+      await loadPublishedSheet();
+      setSheetLoading(false);
+      return;
+    } catch (error) {
+      setSheetLoading(false);
+      const message = getErrorMessage(error);
+
+      if (options.forcePublicError) {
+        showAppError(message);
+      }
+
+      setSearchStatus(CONFIG.googleOAuthClientId
+        ? 'Google blocked public Sheet access. Connect with Google or upload CSV.'
+        : 'Google blocked public Sheet access. Upload CSV, or configure Google sign-in for private Sheet access.');
+    }
+  }
+
+  await loadCachedSnapshot();
+}
+
+async function loadPublishedSheet() {
+  const response = await fetch(CONFIG.publicCsvUrl, {
+    method: 'GET',
+    credentials: 'omit',
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Google Sheet is not publicly readable from this page (${response.status}).`);
+  }
+
+  const csvText = await response.text();
+  loadCsvText(csvText, 'live Google Sheet');
+  setSearchStatus(`Loaded ${Math.max(state.values.length - 1, 0)} rows from the Google Sheet.`);
+}
+
+async function loadSheetFromGoogleApi(accessToken) {
+  if (!CONFIG.sheetId || !CONFIG.sheetRange) {
+    throw new Error('Google Sheet ID or range is missing in docs/config.js.');
+  }
+
+  setSheetLoading(true, 'Loading private Google Sheet...');
+  const encodedRange = encodeURIComponent(CONFIG.sheetRange);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(CONFIG.sheetId)}/values/${encodedRange}?majorDimension=ROWS`;
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Google Sheets API blocked the request (${response.status}). Make sure this Google account can view the Sheet.`);
+  }
+
+  const payload = await response.json();
+  const values = Array.isArray(payload.values) ? payload.values : [];
+  loadValues(values, 'private Google Sheet');
+  setSearchStatus(`Loaded ${Math.max(state.values.length - 1, 0)} rows from the private Google Sheet.`);
 }
 
 async function loadCachedSnapshot() {
@@ -161,8 +268,20 @@ function loadCsvText(csvText, fileName) {
     throw new Error('This CSV does not look like the WhatsApp Chat History export. Expected a phone_digits column.');
   }
 
-  state.values = parseCsv(csvText);
-  renderSnapshotState(fileName);
+  loadValues(parseCsv(csvText), fileName);
+}
+
+function loadValues(values, sourceName) {
+  const headers = values && values[0]
+    ? values[0].map((header) => String(header || '').trim().toLowerCase())
+    : [];
+
+  if (!headers.includes('phone_digits')) {
+    throw new Error('This data does not look like WhatsApp Chat History. Expected a phone_digits column.');
+  }
+
+  state.values = values;
+  renderSnapshotState(sourceName);
 }
 
 function renderSnapshotState(fileName) {
@@ -170,12 +289,77 @@ function renderSnapshotState(fileName) {
   elements.snapshotPanel.classList.toggle('hidden', hasData);
   elements.sheetMeta.textContent = hasData
     ? `Browser-only mode / ${Math.max(state.values.length - 1, 0)} rows loaded${fileName ? ` / ${fileName}` : ''}`
-    : 'Browser-only mode / upload CSV to search';
+    : 'Browser-only mode / load Google Sheet or upload CSV';
 
   if (!hasData) {
     elements.chatTitle.textContent = 'Client conversation';
-    elements.chatSubtitle.textContent = 'Waiting for a CSV upload';
+    elements.chatSubtitle.textContent = 'Waiting for Sheet access';
   }
+}
+
+function renderAuthState() {
+  elements.googleAuthButton.classList.toggle('hidden', !CONFIG.googleOAuthClientId);
+}
+
+function setSheetLoading(isLoading, message) {
+  elements.reloadSheetButton.disabled = isLoading;
+  elements.googleAuthButton.disabled = isLoading;
+
+  if (message) {
+    setSearchStatus(message);
+    elements.sheetMeta.textContent = message;
+  }
+}
+
+async function requestGoogleAccessToken() {
+  await loadGoogleIdentityScript();
+
+  if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+    throw new Error('Google sign-in did not load correctly.');
+  }
+
+  return new Promise((resolve, reject) => {
+    state.googleTokenClient = window.google.accounts.oauth2.initTokenClient({
+      client_id: CONFIG.googleOAuthClientId,
+      scope: SHEETS_SCOPE,
+      callback: (response) => {
+        if (response && response.access_token) {
+          resolve(response.access_token);
+        } else {
+          reject(new Error('Google did not return an access token.'));
+        }
+      },
+      error_callback: (error) => {
+        reject(new Error(error && error.message ? error.message : 'Google sign-in failed.'));
+      },
+    });
+    state.googleTokenClient.requestAccessToken({ prompt: '' });
+  });
+}
+
+function loadGoogleIdentityScript() {
+  return new Promise((resolve, reject) => {
+    if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+      resolve();
+      return;
+    }
+
+    const existing = document.querySelector(`script[src="${GOOGLE_IDENTITY_SCRIPT}"]`);
+
+    if (existing) {
+      existing.addEventListener('load', resolve, { once: true });
+      existing.addEventListener('error', () => reject(new Error('Google sign-in script failed to load.')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = GOOGLE_IDENTITY_SCRIPT;
+    script.async = true;
+    script.defer = true;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('Google sign-in script failed to load.'));
+    document.head.appendChild(script);
+  });
 }
 
 function renderSearchResult() {
