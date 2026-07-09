@@ -20,6 +20,7 @@ module.exports = async function handler(req, res) {
       expiresInHours: CONFIG.sessionHours,
       sheetName: CONFIG.sheetName,
       demoMode: CONFIG.demoMode,
+      demoSamplePhone: CONFIG.demoSamplePhone,
     });
   } catch (error) {
     sendError(res, 500, error);

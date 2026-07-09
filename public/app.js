@@ -4,6 +4,8 @@ const state = {
   token: readStoredToken(),
   result: null,
   showInternal: false,
+  demoMode: false,
+  demoSamplePhone: '',
 };
 
 const elements = {
@@ -123,8 +125,15 @@ function handleLogout() {
 }
 
 function renderSession(session) {
+  state.demoMode = Boolean(session.demoMode);
+  state.demoSamplePhone = session.demoSamplePhone || '';
+
   const mode = session.demoMode ? 'demo mode' : 'live Google Sheet';
   elements.sheetMeta.textContent = `Connected to ${session.sheetName || 'Hoja 1'} / ${mode}`;
+
+  if (session.demoMode) {
+    showAppError(`Local demo mode is active. Real client numbers will not match yet. Try demo number ${state.demoSamplePhone}.`);
+  }
 }
 
 function renderSearchResult() {
@@ -177,6 +186,9 @@ function renderSearchResult() {
 
 function renderNoMatch(result) {
   const query = result ? result.rawPhone : '';
+  const demoNote = state.demoMode
+    ? `Local demo mode is active, so only the sample number ${escapeHtml(state.demoSamplePhone)} is available. Connect Google Sheets to search real clients.`
+    : 'The search checked phone_digits and phone_local.';
 
   elements.chatAvatar.textContent = 'V';
   elements.chatTitle.textContent = 'No conversation found';
@@ -185,13 +197,14 @@ function renderNoMatch(result) {
   elements.profilePanel.innerHTML = `
     <h2>No match found</h2>
     <p class="muted">Try the international format, local format, or digits only.</p>
+    ${state.demoMode ? `<p class="muted">Demo number: <strong>${escapeHtml(state.demoSamplePhone)}</strong></p>` : ''}
     <p id="searchStatus" class="status-line">${escapeHtml(query || '')}</p>
   `;
   elements.messageList.innerHTML = `
     <div class="empty-state">
       <div class="empty-state-box">
         <h2>No rows matched</h2>
-        <p class="muted">The search checked phone_digits and phone_local.</p>
+        <p class="muted">${demoNote}</p>
       </div>
     </div>
   `;

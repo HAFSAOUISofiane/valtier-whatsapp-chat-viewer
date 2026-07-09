@@ -14,6 +14,7 @@ module.exports = async function handler(req, res) {
       session,
       sheetName: CONFIG.sheetName,
       demoMode: CONFIG.demoMode,
+      demoSamplePhone: CONFIG.demoSamplePhone,
     });
   } catch (error) {
     sendError(res, 401, error);

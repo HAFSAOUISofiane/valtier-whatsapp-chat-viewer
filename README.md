@@ -60,6 +60,14 @@ http://localhost:5174
 
 5. Login with the `ACCESS_CODE` from `.env`.
 
+In demo mode, real client numbers will not match. Use this sample phone:
+
+```text
+34638771742
+```
+
+To search real clients, switch `DEMO_MODE=false` and configure the Google service account variables below.
+
 ## Live Google Sheet Connection
 
 Use a Google Cloud service account. Do not put credentials in GitHub.
