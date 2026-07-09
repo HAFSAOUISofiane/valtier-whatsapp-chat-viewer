@@ -87,6 +87,14 @@ data/whatsapp-chat-history.csv
 
 The `data/` folder is ignored by Git so private chat history is not pushed to GitHub.
 
+If you see:
+
+```text
+Local Sheet CSV snapshot not found
+```
+
+it means `LOCAL_SHEET_CSV_FILE` points to a CSV path that does not exist yet. Create the `data/` folder if needed, then save the exported CSV with the exact filename configured in `.env.local`.
+
 ## Live Google Sheet Connection
 
 Use a Google Cloud service account. Do not put credentials in GitHub.

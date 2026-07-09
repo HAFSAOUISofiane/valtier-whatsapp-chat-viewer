@@ -19,6 +19,10 @@ async function readSheetValues() {
   }
 
   if (CONFIG.localCsvFile) {
+    if (!fs.existsSync(CONFIG.localCsvFile)) {
+      throw new Error(`Local Sheet CSV snapshot not found at ${CONFIG.localCsvFile}. Export the Google Sheet tab as CSV and save it there, or configure Google service account credentials.`);
+    }
+
     return parseCsv(fs.readFileSync(CONFIG.localCsvFile, 'utf8'));
   }
 
