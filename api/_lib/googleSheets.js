@@ -18,6 +18,10 @@ async function readSheetValues() {
     return DEMO_VALUES;
   }
 
+  if (CONFIG.localCsvFile) {
+    return parseCsv(fs.readFileSync(CONFIG.localCsvFile, 'utf8'));
+  }
+
   const accessToken = await getGoogleAccessToken();
   const range = quoteSheetName(CONFIG.sheetName) + '!' + CONFIG.sheetRange;
   const url = new URL(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}/values/${encodeURIComponent(range)}`);
@@ -121,6 +125,16 @@ function getGoogleCredentialsStatus() {
     };
   }
 
+  if (CONFIG.localCsvFile) {
+    return {
+      configured: fs.existsSync(CONFIG.localCsvFile),
+      source: 'LOCAL_SHEET_CSV_FILE',
+      message: fs.existsSync(CONFIG.localCsvFile)
+        ? 'Local CSV snapshot is configured.'
+        : 'LOCAL_SHEET_CSV_FILE points to a file that does not exist.',
+    };
+  }
+
   if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
     return {
       configured: true,
@@ -160,6 +174,51 @@ function getGoogleCredentialsStatus() {
     source: '',
     message: 'Missing Google service account credentials.',
   };
+}
+
+function parseCsv(csvText) {
+  const rows = [];
+  let row = [];
+  let value = '';
+  let inQuotes = false;
+
+  for (let index = 0; index < csvText.length; index += 1) {
+    const char = csvText[index];
+    const nextChar = csvText[index + 1];
+
+    if (inQuotes) {
+      if (char === '"' && nextChar === '"') {
+        value += '"';
+        index += 1;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        value += char;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = true;
+    } else if (char === ',') {
+      row.push(value);
+      value = '';
+    } else if (char === '\n') {
+      row.push(value);
+      rows.push(row);
+      row = [];
+      value = '';
+    } else if (char !== '\r') {
+      value += char;
+    }
+  }
+
+  if (value || row.length) {
+    row.push(value);
+    rows.push(row);
+  }
+
+  return rows.map((csvRow) => csvRow.slice(0, 12));
 }
 
 function createJwtAssertion(serviceAccount, now) {

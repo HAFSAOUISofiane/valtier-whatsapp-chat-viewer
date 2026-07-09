@@ -68,6 +68,25 @@ In demo mode, real client numbers will not match. Use this sample phone:
 
 To search real clients, switch `DEMO_MODE=false` and configure the Google service account variables below.
 
+## Local Snapshot From Google Drive Plugin
+
+Codex can read/export the Sheet through the connected Google Drive plugin, but the standalone web app cannot call Codex plugins at runtime.
+
+For local testing with real data, export the Sheet as CSV and point the app at it:
+
+```bash
+DEMO_MODE=false
+LOCAL_SHEET_CSV_FILE=/absolute/path/to/whatsapp-chat-history.csv
+```
+
+Recommended local path:
+
+```text
+data/whatsapp-chat-history.csv
+```
+
+The `data/` folder is ignored by Git so private chat history is not pushed to GitHub.
+
 ## Live Google Sheet Connection
 
 Use a Google Cloud service account. Do not put credentials in GitHub.

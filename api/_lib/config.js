@@ -9,6 +9,7 @@ const CONFIG = {
   sessionSecret: process.env.SESSION_SECRET || '',
   sessionHours: Number(process.env.SESSION_HOURS || 8),
   demoMode: process.env.DEMO_MODE === 'true',
+  localCsvFile: process.env.LOCAL_SHEET_CSV_FILE || '',
   demoSamplePhone: '34638771742',
 };
 
