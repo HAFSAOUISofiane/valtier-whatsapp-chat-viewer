@@ -4,6 +4,11 @@ Standalone web app for Valtier agents to search WhatsApp chat history by client 
 
 This replaces the Google Apps Script deployment with a normal web app that can live in GitHub and be deployed later on Vercel or another Node-capable host.
 
+There are two usable versions:
+
+- Local or backend-hosted app: connects to a local CSV snapshot or private Google Sheets credentials.
+- Free GitHub Pages app: runs fully in the browser from `docs/`; agents upload the CSV snapshot locally before searching.
+
 ## What It Does
 
 - Login with a private access code.
@@ -135,6 +140,19 @@ Alternative: set the full service account JSON in `GOOGLE_SERVICE_ACCOUNT_JSON` 
 
 ## GitHub
 
+### Free GitHub Pages Deployment
+
+The `docs/` folder contains a static GitHub Pages version. It is safe to publish because it does not include the WhatsApp chat CSV, `.env.local`, or Google credentials.
+
+How agents use it:
+
+1. Open the GitHub Pages link.
+2. Enter the access code.
+3. Upload the exported `Whatsapp Chat History - Hoja 1.csv`.
+4. Search by full phone number, local phone number, or formatted number.
+
+Important: the GitHub Pages access code is only a light gate because static website code is public. It is useful for a free prototype, but not strong security. For a private live connection to Google Sheets, deploy the backend version on Vercel or another server host.
+
 From this folder:
 
 ```bash
@@ -146,10 +164,10 @@ git commit -m "Build WhatsApp chat viewer web app"
 If GitHub CLI is authenticated:
 
 ```bash
-gh repo create valtier-whatsapp-chat-viewer --private --source=. --remote=origin --push
+gh repo create valtier-whatsapp-chat-viewer --public --source=. --remote=origin --push
 ```
 
-Keep the repo private because this is an internal operations tool.
+Then enable GitHub Pages from branch `main` and folder `/docs`.
 
 ## Vercel Deployment
 

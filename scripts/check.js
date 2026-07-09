@@ -18,6 +18,7 @@ const files = [
   'api/_lib/phone.js',
   'api/_lib/session.js',
   'public/app.js',
+  'docs/app.js',
 ];
 
 files.forEach((file) => {
