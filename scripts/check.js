@@ -10,6 +10,7 @@ const files = [
   'api/login.js',
   'api/search.js',
   'api/session.js',
+  'api/snapshot.js',
   'api/_lib/chat.js',
   'api/_lib/config.js',
   'api/_lib/googleSheets.js',

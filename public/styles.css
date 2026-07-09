@@ -253,6 +253,39 @@ input:disabled {
   background: rgba(255, 255, 255, 0.92);
 }
 
+.snapshot-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  margin: 14px clamp(16px, 3vw, 28px) 0;
+  padding: 14px 16px;
+  border: 1px solid #eed0a3;
+  border-radius: 8px;
+  color: #6d4d10;
+  background: #fff8ea;
+}
+
+.snapshot-panel h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.snapshot-panel p {
+  margin: 0;
+  color: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .search-form {
   display: grid;
   grid-template-columns: minmax(180px, 420px) auto;
@@ -517,6 +550,7 @@ input:disabled {
 @media (max-width: 900px) {
   .topbar,
   .search-strip,
+  .snapshot-panel,
   .workspace,
   .chat-header {
     grid-template-columns: 1fr;

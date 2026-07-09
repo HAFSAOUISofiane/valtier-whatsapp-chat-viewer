@@ -11,6 +11,7 @@ const apiHandlers = {
   '/api/login': require('./api/login'),
   '/api/search': require('./api/search'),
   '/api/session': require('./api/session'),
+  '/api/snapshot': require('./api/snapshot'),
 };
 
 const publicDir = path.join(__dirname, 'public');

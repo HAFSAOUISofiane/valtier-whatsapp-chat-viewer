@@ -87,6 +87,15 @@ data/whatsapp-chat-history.csv
 
 The `data/` folder is ignored by Git so private chat history is not pushed to GitHub.
 
+The local web app also has an upload panel when the CSV is missing:
+
+1. Export the Google Sheet tab `Hoja 1` as CSV.
+2. In the app, click `Choose CSV`.
+3. Select the exported file.
+4. Search the phone number again.
+
+The server saves it to the configured `LOCAL_SHEET_CSV_FILE` path.
+
 If you see:
 
 ```text

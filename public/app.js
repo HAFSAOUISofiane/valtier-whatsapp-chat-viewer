@@ -23,6 +23,8 @@ const elements = {
   phoneInput: document.getElementById('phoneInput'),
   searchButton: document.getElementById('searchButton'),
   showInternal: document.getElementById('showInternal'),
+  snapshotPanel: document.getElementById('snapshotPanel'),
+  snapshotFile: document.getElementById('snapshotFile'),
   profilePanel: document.getElementById('profilePanel'),
   chatAvatar: document.getElementById('chatAvatar'),
   chatTitle: document.getElementById('chatTitle'),
@@ -42,6 +44,7 @@ window.addEventListener('unhandledrejection', (event) => {
 elements.loginForm.addEventListener('submit', handleLogin);
 elements.searchForm.addEventListener('submit', handleSearch);
 elements.logoutButton.addEventListener('click', handleLogout);
+elements.snapshotFile.addEventListener('change', handleSnapshotUpload);
 elements.showInternal.addEventListener('change', () => {
   state.showInternal = elements.showInternal.checked;
   renderMessages();
@@ -144,6 +147,51 @@ function renderSession(session) {
   if (state.googleCredentials && !state.googleCredentials.configured) {
     showAppError('Live Google Sheet mode is active, but Google credentials are missing. Add a service account JSON file or environment variables, then restart the app.');
   }
+
+  renderSnapshotPanel();
+}
+
+async function handleSnapshotUpload(event) {
+  const file = event.target.files && event.target.files[0];
+
+  if (!file) {
+    return;
+  }
+
+  hideAppError();
+  setSearchStatus('Uploading CSV snapshot...');
+
+  try {
+    const csvText = await file.text();
+    const result = await apiPost('/api/snapshot', {
+      fileName: file.name,
+      csvText,
+    });
+
+    state.googleCredentials = result.googleCredentials || state.googleCredentials;
+    renderSnapshotPanel();
+    setSearchStatus(`CSV snapshot installed (${Math.round((result.bytes || 0) / 1024)} KB). Search again.`);
+    hideAppError();
+  } catch (error) {
+    const message = getErrorMessage(error);
+    setSearchStatus(message);
+    showAppError(message);
+  } finally {
+    event.target.value = '';
+  }
+}
+
+function renderSnapshotPanel() {
+  if (!elements.snapshotPanel) {
+    return;
+  }
+
+  const shouldShow = !state.demoMode
+    && state.googleCredentials
+    && state.googleCredentials.source === 'LOCAL_SHEET_CSV_FILE'
+    && !state.googleCredentials.configured;
+
+  elements.snapshotPanel.classList.toggle('hidden', !shouldShow);
 }
 
 function renderSearchResult() {
